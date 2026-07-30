@@ -2,5 +2,6 @@ node_modules/
 dist/
 *.png
 !public/og.png
+!public/assets/lexi-paralegal-avatar.png
 .DS_Store
 npm-debug.log*

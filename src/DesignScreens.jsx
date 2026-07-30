@@ -333,338 +333,464 @@ function Workbench({
   onUpload,
   onNotify,
 }) {
-  const [scope, setScope] = useState("我的任务");
-  const [agentRunning, setAgentRunning] = useState(true);
+  const [feedFilter, setFeedFilter] = useState("全部");
+  const [goalRange, setGoalRange] = useState("今日");
+  const [showAll, setShowAll] = useState(false);
+  const [composer, setComposer] = useState("");
+  const [notificationOpen, setNotificationOpen] = useState(true);
+  const [mobileActivityOpen, setMobileActivityOpen] = useState(false);
 
-  const priorityTasks =
-    scope === "我的任务"
-      ? tasks.slice(0, 3)
-      : [
-          tasks[1],
-          tasks[3],
-          {
-            title: "核心系统续费补充协议",
-            counterparty: "皓月科技",
-            type: "补充协议",
-            deadline: "8 月 4 日",
-            risk: "待分诊",
-            state: "Unassigned",
-            score: 61,
-            reason: "等待团队成员认领并补充采购背景",
-          },
-        ];
-
-  const metricItems = [
+  const briefingItems = [
     {
-      icon: "ri-file-list-3-line",
+      id: "scan",
       tone: "blue",
-      label: "待处理审阅",
-      value: "8",
-      trend: "2 项今日到期",
-      onClick: onOpenTasks,
+      title: "AI 完成 SaaS 服务采购合同 V3 初筛",
+      description: "识别 11 个问题，其中 4 项高风险；责任限制与数据安全需要优先确认。",
+      meta: "11:28 · AI 自动执行",
+      status: "已完成",
+      action: () => onOpenWorkspace(),
     },
     {
-      icon: "ri-alarm-warning-line",
-      tone: "red",
-      label: "高风险合同",
-      value: "3",
-      trend: "1 项等待确认",
-      onClick: onOpenWorkspace,
-    },
-    {
-      icon: "ri-checkbox-circle-line",
-      tone: "green",
-      label: "本周已完成",
-      value: "12",
-      trend: "较上周 +20%",
-      onClick: onOpenExport,
-    },
-    {
-      icon: "ri-time-line",
+      id: "compare",
       tone: "violet",
-      label: "平均节省",
-      value: "38",
-      unit: "分钟",
-      trend: "本周累计 7.6 小时",
-      onClick: () => onNotify("效率数据已按本周工作量更新"),
+      title: "已对比 DPA V2 与对方回传版本",
+      description: "检测到 7 处实质变化，责任上限与数据留存条款出现新的偏离。",
+      meta: "10:46 · 版本监控",
+      status: "已完成",
+      action: () => onOpenCompare(),
+    },
+    {
+      id: "owner",
+      tone: "red",
+      title: "跟进采购 Owner：确认责任上限与数据跨境底线",
+      description: "签署截止为今天 18:00，建议在 14:00 前完成业务取舍并回传法务。",
+      meta: "SaaS 服务采购合同 V3 · Gmail",
+      status: "待处理",
+      proactive: true,
+      action: () => {
+        onSelectTask(0);
+        onOpenContext();
+      },
+    },
+    {
+      id: "breach",
+      tone: "amber",
+      title: "核验数据泄露通知时限与补救责任",
+      description: "对方版本约定 10 个工作日通知，偏离团队 Playbook 的 24 小时底线。",
+      meta: "第 9.2 条 · 数据安全",
+      status: "待处理",
+      proactive: true,
+      action: () => onOpenWorkspace(),
+    },
+    {
+      id: "minutes",
+      tone: "blue",
+      title: "会议纪要：每日法务采购同步",
+      description: "需补充排他范围、最低采购承诺与上线验收标准，已生成 3 项跟进任务。",
+      meta: "会议纪要 · 今天 09:32",
+      status: "待处理",
+      proactive: true,
+      action: () => onOpenTasks(),
+    },
+    {
+      id: "channel",
+      tone: "amber",
+      title: "核验渠道协议排他范围与最低采购承诺",
+      description: "业务背景仍不完整，AI 已整理需要采购团队确认的 5 个问题。",
+      meta: "渠道合作协议 V2 · 待补充信息",
+      status: "待处理",
+      proactive: true,
+      action: () => {
+        onSelectTask(1);
+        onOpenContext();
+      },
+    },
+    {
+      id: "package",
+      tone: "green",
+      title: "SaaS 服务采购合同 V2 Review Package 已归档",
+      description: "修订版、带批注版本、审查摘要和执行轨迹均已完成校验。",
+      meta: "成果包 · 昨天 17:42",
+      status: "已完成",
+      action: () => onOpenExport(),
+    },
+    {
+      id: "nda",
+      tone: "violet",
+      title: "Marketing NDA 红线稿已生成",
+      description: "保密期限、允许披露对象和信息返还义务已按标准模板调整。",
+      meta: "成果包 · 7 月 28 日",
+      status: "已完成",
+      action: () => onOpenExport(),
     },
   ];
 
-  const runTaskAction = (task, index) => {
-    if (task.state === "New Version") {
-      onSelectTask(index);
-      onOpenCompare();
+  const visibleBriefingItems = briefingItems
+    .filter((item) => feedFilter === "全部" || item.status === feedFilter)
+    .slice(0, showAll ? briefingItems.length : 6);
+
+  const recentActivity = [
+    ["18:46", "聚焦本周高风险合同清零", "本周", "blue"],
+    ["17:38", "生成每日法务采购同步纪要", "会议纪要", "blue"],
+    ["16:23", "完成启明云服务合同 V3 初筛", "合同审阅", "green"],
+    ["16:12", "检测 DPA 对方版本实质变化", "版本监控", "green"],
+    ["15:26", "发送渠道协议补充信息请求", "协作", "blue"],
+    ["14:21", "归档 Marketing NDA 红线稿", "成果包", "green"],
+  ];
+
+  const submitTask = () => {
+    const value = composer.trim();
+    if (!value) {
+      onNotify("请输入需要 Lexi 执行的任务");
       return;
     }
-    if (task.state === "Needs Info") {
-      onSelectTask(index);
-      onNotify("已打开待补充信息任务");
-      return;
-    }
-    onSelectTask(index);
-    onOpenContext();
+    setComposer("");
+    onNotify(`Lexi 已接收任务：${value}`);
   };
 
   return (
-    <Shell
-      className="hf-workbench-screen"
-      mode="dashboard"
-      active="工作台"
-      onNavigate={onNavigate}
-      onMenu={() => onNotify("工作区导航已展开")}
-      onMore={() => onNotify("工作台偏好与通知设置")}
-    >
-      <main className="hf-workbench-main">
-        <section className="hf-workbench-heading">
-          <div>
-            <span className="hf-eyebrow">LEGAL OPERATIONS · OVERVIEW</span>
-            <h1>早上好，Leo</h1>
-            <p>今天有 5 项需要关注，其中 3 项涉及高风险合同。</p>
-          </div>
-          <div className="hf-workbench-actions">
-            <Button icon="ri-upload-2-line" onClick={onUpload}>
-              上传合同
-            </Button>
-            <Button tone="primary" icon="ri-add-line" onClick={onOpenContext}>
-              新建审阅
-            </Button>
-          </div>
+    <div className="hf-agent-workbench">
+      <aside className="hf-agent-rail">
+        <div className="hf-agent-brand">
+          <img
+            src={`${import.meta.env.BASE_URL}assets/alloomi-logo.svg`}
+            alt="Alloomi"
+          />
+        </div>
+
+        <section className="hf-employee-card">
+          <header>
+            <span>我的员工</span>
+            <Icon name="ri-arrow-down-s-line" />
+          </header>
+          <button
+            type="button"
+            onClick={() => onNotify("Lexi 的数字员工档案已打开")}
+          >
+            <img
+              src={`${import.meta.env.BASE_URL}assets/lexi-paralegal-avatar.png`}
+              alt="AI 法务员工 Lexi"
+            />
+            <span>
+              <strong>Lexi</strong>
+              <small>AI 法务助手</small>
+            </span>
+            <Icon name="ri-id-card-line" />
+          </button>
         </section>
 
-        <section className="hf-workbench-metrics" aria-label="法务工作指标">
-          {metricItems.map((metric) => (
+        <nav className="hf-agent-nav" aria-label="工作台导航">
+          {[
+            ["ri-briefcase-4-line", "今日事项", () => setFeedFilter("全部")],
+            ["ri-timer-flash-line", "自动任务", onOpenTasks],
+            ["ri-history-line", "历史事项", onOpenExport],
+            ["ri-building-4-line", "办公室", onOpenWorkspace],
+          ].map(([icon, label, action], index) => (
             <button
-              className="hf-workbench-metric"
+              className={index === 0 ? "active" : ""}
               type="button"
-              key={metric.label}
-              onClick={metric.onClick}
+              key={label}
+              onClick={action}
             >
-              <span className={`hf-workbench-metric-icon ${metric.tone}`}>
-                <Icon name={metric.icon} />
-              </span>
-              <span className="hf-workbench-metric-copy">
-                <small>{metric.label}</small>
-                <strong>
-                  {metric.value}
-                  {metric.unit && <em>{metric.unit}</em>}
-                </strong>
-                <span>{metric.trend}</span>
-              </span>
-              <Icon name="ri-arrow-right-s-line" />
+              <Icon name={icon} />
+              <span>{label}</span>
+              {index === 0 && <em>5</em>}
             </button>
           ))}
+        </nav>
+
+        <footer className="hf-agent-user">
+          <button type="button" onClick={() => onNotify("个人设置已打开")}>
+            <span className="hf-avatar">L</span>
+            <span>
+              <strong>Leo Zu</strong>
+              <small>项目法务</small>
+            </span>
+            <Icon name="ri-settings-3-line" />
+          </button>
+        </footer>
+      </aside>
+
+      <main className="hf-agent-center">
+        <header className="hf-agent-greeting">
+          <img
+            src={`${import.meta.env.BASE_URL}assets/lexi-paralegal-avatar.png`}
+            alt=""
+          />
+          <div>
+            <h1>我已完成今天的合同风险扫描。</h1>
+            <p>
+              今日已审阅 <strong>14</strong> 份合同，
+              <strong>3</strong> 个事项等待你处理
+            </p>
+          </div>
+          <button
+            className="hf-mobile-activity-button"
+            type="button"
+            onClick={() => setMobileActivityOpen(true)}
+            aria-label="查看目标与最近动态"
+          >
+            <Icon name="ri-pulse-line" />
+          </button>
+        </header>
+
+        <section className="hf-daily-brief">
+          <header>
+            <div>
+              <h2>今日简报</h2>
+              <span>{visibleBriefingItems.length} 条事项</span>
+            </div>
+            <div className="hf-brief-tools">
+              <button
+                type="button"
+                aria-label="上传合同"
+                title="上传合同"
+                onClick={onUpload}
+              >
+                <Icon name="ri-upload-2-line" />
+              </button>
+              <button
+                type="button"
+                aria-label="新建审阅"
+                title="新建审阅"
+                onClick={onOpenContext}
+              >
+                <Icon name="ri-add-circle-line" />
+              </button>
+              <button
+                className={feedFilter === "待处理" ? "active" : ""}
+                type="button"
+                aria-label="只看待处理"
+                title="只看待处理"
+                onClick={() =>
+                  setFeedFilter((current) =>
+                    current === "待处理" ? "全部" : "待处理",
+                  )
+                }
+              >
+                <Icon name="ri-filter-3-line" />
+              </button>
+            </div>
+          </header>
+
+          <div className="hf-brief-list">
+            {visibleBriefingItems.map((item) => (
+              <button type="button" key={item.id} onClick={item.action}>
+                <span className={`hf-brief-dot ${item.tone}`}>
+                  <Icon
+                    name={
+                      item.status === "已完成"
+                        ? "ri-checkbox-circle-fill"
+                        : "ri-circle-fill"
+                    }
+                  />
+                </span>
+                <span className="hf-brief-copy">
+                  <strong>{item.title}</strong>
+                  <small>{item.description}</small>
+                  <em>{item.meta}</em>
+                </span>
+                <span className="hf-brief-tags">
+                  <Tag tone={item.status === "已完成" ? "green" : "red"}>
+                    {item.status}
+                  </Tag>
+                  {item.proactive && <Tag tone="blue">AI 主动式</Tag>}
+                </span>
+                <Icon name="ri-arrow-right-s-line" />
+              </button>
+            ))}
+          </div>
+          <button
+            className="hf-show-more"
+            type="button"
+            onClick={() => setShowAll((current) => !current)}
+          >
+            {showAll ? "收起事项" : "查看更多"}
+            <Icon name={showAll ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} />
+          </button>
         </section>
 
-        <section className="hf-workbench-grid">
-          <section className="hf-workbench-panel hf-priority-panel">
-            <header className="hf-panel-heading">
-              <div>
-                <h2>今日优先事项</h2>
-                <p>AI 已结合截止时间、业务影响与风险完成排序</p>
-              </div>
-              <button className="hf-text-button" type="button" onClick={onOpenTasks}>
-                查看全部 <Icon name="ri-arrow-right-line" />
-              </button>
-            </header>
-            <div className="hf-priority-tabs" role="tablist" aria-label="任务范围">
-              {["我的任务", "团队任务"].map((label) => (
-                <button
-                  className={scope === label ? "active" : ""}
-                  type="button"
-                  role="tab"
-                  aria-selected={scope === label}
-                  key={label}
-                  onClick={() => setScope(label)}
-                >
-                  {label}
-                  <span>{label === "我的任务" ? 5 : 11}</span>
-                </button>
-              ))}
-            </div>
-            <div className="hf-priority-list">
-              {priorityTasks.map((task, index) => {
-                const originalIndex = tasks.findIndex((item) => item.title === task.title);
-                const taskIndex = originalIndex >= 0 ? originalIndex : index;
-                const highRisk = task.risk.includes("高");
-                return (
-                  <article className="hf-priority-row" key={task.title}>
-                    <button
-                      className="hf-priority-open"
-                      type="button"
-                      onClick={() => onSelectTask(taskIndex)}
-                    >
-                      <span className={`hf-priority-marker ${highRisk ? "hot" : ""}`} />
-                      <span className="hf-priority-title">
-                        <strong>{task.title}</strong>
-                        <small>
-                          {task.counterparty} · {task.type}
-                        </small>
-                      </span>
-                      <span className="hf-priority-deadline">
-                        <small>截止时间</small>
-                        <strong className={index === 0 ? "deadline-hot" : ""}>
-                          {task.deadline}
-                        </strong>
-                      </span>
-                      <Tag tone={highRisk ? "red" : task.risk === "待分诊" ? "violet" : "amber"}>
-                        {task.risk}
-                      </Tag>
-                    </button>
-                    <button
-                      className="hf-priority-action"
-                      type="button"
-                      onClick={() => runTaskAction(task, taskIndex)}
-                    >
-                      {task.state === "New Version"
-                        ? "查看变化"
-                        : task.state === "Needs Info"
-                          ? "补充信息"
-                          : task.state === "Unassigned"
-                            ? "认领"
-                            : "开始审阅"}
-                      <Icon name="ri-arrow-right-s-line" />
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-
-          <aside className="hf-workbench-panel hf-agent-panel">
-            <header className="hf-panel-heading">
-              <div>
-                <h2>AI Paralegal</h2>
-                <p>合同审阅数字员工</p>
-              </div>
-              <span className={`hf-agent-state ${agentRunning ? "running" : "paused"}`}>
-                <i />
-                {agentRunning ? "正常运行" : "已暂停"}
-              </span>
-            </header>
-            <div className="hf-agent-overview">
-              <span className="hf-agent-avatar">
-                <Icon name="ri-sparkling-fill" />
-              </span>
-              <div>
-                <strong>{agentRunning ? "正在监控 4 个合同任务" : "自动处理已暂停"}</strong>
-                <p>
-                  {agentRunning
-                    ? "下一次队列检查将在 2 分钟后执行"
-                    : "恢复后将继续处理当前审阅队列"}
-                </p>
-              </div>
+        <section className="hf-agent-composer">
+          <textarea
+            value={composer}
+            placeholder="交代一个任务，或提出任何问题..."
+            aria-label="向 Lexi 分配任务"
+            onChange={(event) => setComposer(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                submitTask();
+              }
+            }}
+          />
+          <div className="hf-composer-toolbar">
+            <div>
               <button
-                className="hf-agent-toggle"
                 type="button"
-                aria-label={agentRunning ? "暂停 AI Paralegal" : "恢复 AI Paralegal"}
-                onClick={() => {
-                  setAgentRunning((current) => !current);
-                  onNotify(agentRunning ? "AI Paralegal 已暂停" : "AI Paralegal 已恢复运行");
-                }}
+                aria-label="添加附件"
+                title="添加附件"
+                onClick={onUpload}
               >
-                <Icon name={agentRunning ? "ri-pause-mini-fill" : "ri-play-mini-fill"} />
+                <Icon name="ri-attachment-2" />
               </button>
-            </div>
-            <div className="hf-agent-progress">
-              <span>
-                <strong>当前合同审阅</strong>
-                <small>{processed}/11 个问题已处理</small>
-              </span>
-              <div className="hf-progress">
-                <span style={{ width: `${(processed / 11) * 100}%` }} />
-              </div>
-              <button type="button" onClick={onOpenWorkspace}>
-                继续处理 <Icon name="ri-arrow-right-line" />
-              </button>
-            </div>
-            <div className="hf-agent-activity">
-              <span className="hf-agent-section-label">最近执行</span>
-              <button type="button" onClick={onOpenWorkspace}>
-                <span className="hf-activity-icon blue"><Icon name="ri-search-eye-line" /></span>
-                <span><strong>完成 V3 初筛</strong><small>识别 11 个问题 · 11:28</small></span>
-              </button>
-              <button type="button" onClick={onOpenCompare}>
-                <span className="hf-activity-icon violet"><Icon name="ri-git-compare-line" /></span>
-                <span><strong>检测新版本变化</strong><small>DPA 发现 7 处实质变化 · 10:46</small></span>
-              </button>
-              <button type="button" onClick={onOpenExport}>
-                <span className="hf-activity-icon green"><Icon name="ri-file-text-line" /></span>
-                <span><strong>生成审阅摘要</strong><small>渠道合作协议 V1 · 09:32</small></span>
-              </button>
-            </div>
-          </aside>
-
-          <section className="hf-workbench-panel hf-deadline-panel">
-            <header className="hf-panel-heading">
-              <div>
-                <h2>临近截止时间</h2>
-                <p>未来 7 天需要完成的法务事项</p>
-              </div>
               <button
-                className="hf-icon-button"
                 type="button"
-                aria-label="查看日历"
-                onClick={() => onNotify("已同步团队法务日历")}
+                aria-label="安排定时任务"
+                title="安排定时任务"
+                onClick={() => onNotify("定时任务设置已打开")}
               >
-                <Icon name="ri-calendar-line" />
+                <Icon name="ri-calendar-schedule-line" />
               </button>
-            </header>
-            <div className="hf-deadline-list">
-              {[
-                ["30", "今天", "18:00", "SaaS 服务采购合同 V3", "等待法务确认", "red"],
-                ["31", "明天", "12:00", "渠道合作协议 V2", "等待业务补充", "amber"],
-                ["01", "8 月", "17:00", "数据处理协议 DPA", "新版本待比较", "violet"],
-              ].map(([date, month, time, title, status, tone], index) => (
-                <button
-                  type="button"
-                  key={title}
-                  onClick={() => {
-                    onSelectTask(index);
-                    if (index === 2) onOpenCompare();
-                  }}
-                >
-                  <span className="hf-deadline-date">
-                    <strong>{date}</strong>
-                    <small>{month}</small>
-                  </span>
-                  <span>
-                    <strong>{title}</strong>
-                    <small>{time} · {status}</small>
-                  </span>
-                  <Tag tone={tone}>{index === 0 ? "今日到期" : index === 1 ? "需协作" : "新版本"}</Tag>
-                </button>
-              ))}
             </div>
-          </section>
-
-          <section className="hf-workbench-panel hf-recent-panel">
-            <header className="hf-panel-heading">
-              <div>
-                <h2>最近成果</h2>
-                <p>已完成的审阅与可交付文件</p>
-              </div>
-              <button className="hf-text-button" type="button" onClick={onOpenExport}>
-                成果包 <Icon name="ri-arrow-right-line" />
-              </button>
-            </header>
-            <div className="hf-recent-list">
-              {[
-                ["ri-file-word-line", "SaaS 服务采购合同 V2", "Review Package", "今天 09:18", "blue"],
-                ["ri-file-list-3-line", "零售渠道框架协议", "审查意见摘要", "昨天 17:42", "green"],
-                ["ri-git-merge-line", "Marketing NDA", "红线稿", "7 月 28 日", "violet"],
-              ].map(([icon, title, type, date, tone]) => (
-                <button type="button" key={title} onClick={onOpenExport}>
-                  <span className={`hf-recent-icon ${tone}`}><Icon name={icon} /></span>
-                  <span><strong>{title}</strong><small>{type}</small></span>
-                  <time>{date}</time>
-                  <Icon name="ri-arrow-right-s-line" />
-                </button>
-              ))}
-            </div>
-          </section>
+            <span><i /> Lexi 在线</span>
+            <button
+              type="button"
+              aria-label="语音输入"
+              title="语音输入"
+              onClick={() => onNotify("语音输入已准备")}
+            >
+              <Icon name="ri-mic-line" />
+            </button>
+            <button
+              className="hf-composer-send"
+              type="button"
+              aria-label="发送任务"
+              onClick={submitTask}
+            >
+              <Icon name="ri-arrow-up-line" />
+            </button>
+          </div>
         </section>
       </main>
-    </Shell>
+
+      <aside
+        className={`hf-agent-activity-panel ${mobileActivityOpen ? "mobile-open" : ""}`}
+      >
+        <button
+          className="hf-activity-close"
+          type="button"
+          aria-label="关闭动态面板"
+          onClick={() => setMobileActivityOpen(false)}
+        >
+          <Icon name="ri-close-line" />
+        </button>
+
+        <section className="hf-goal-card">
+          <header>
+            <h2>目标</h2>
+            <button
+              type="button"
+              aria-label="编辑目标"
+              onClick={() => onNotify("目标编辑已打开")}
+            >
+              <Icon name="ri-edit-line" />
+            </button>
+          </header>
+          <div className="hf-goal-overview">
+            <span className="hf-goal-progress">
+              <Icon name="ri-donut-chart-fill" />
+              <strong>72%</strong>
+            </span>
+            <p>本周完成 18 份合同审阅，清零高风险待确认事项</p>
+          </div>
+          <div className="hf-goal-tabs" role="tablist" aria-label="目标周期">
+            {["今日", "本周", "本月"].map((range) => (
+              <button
+                className={goalRange === range ? "active" : ""}
+                type="button"
+                role="tab"
+                aria-selected={goalRange === range}
+                key={range}
+                onClick={() => setGoalRange(range)}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+          <div className="hf-goal-metrics">
+            {[
+              ["审阅合同数", goalRange === "今日" ? "8" : goalRange === "本周" ? "14" : "42"],
+              ["高风险关闭", goalRange === "今日" ? "5" : goalRange === "本周" ? "9" : "21"],
+              ["更新版本数", goalRange === "今日" ? "3" : goalRange === "本周" ? "7" : "16"],
+            ].map(([label, value]) => (
+              <span key={label}>
+                <small>{label}</small>
+                <strong>{value}</strong>
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section className="hf-activity-stream">
+          <header>
+            <h2>最近动态</h2>
+            <button
+              type="button"
+              aria-label="刷新动态"
+              onClick={() => onNotify("最近动态已刷新")}
+            >
+              <Icon name="ri-refresh-line" />
+            </button>
+          </header>
+          <div>
+            {recentActivity.map(([time, title, type, tone], index) => (
+              <button
+                type="button"
+                key={`${time}-${title}`}
+                onClick={
+                  index === 2
+                    ? onOpenWorkspace
+                    : index === 3
+                      ? onOpenCompare
+                      : index === 5
+                        ? onOpenExport
+                        : () => onNotify(`${type}详情已打开`)
+                }
+              >
+                <Icon
+                  name={
+                    tone === "green"
+                      ? "ri-checkbox-circle-fill"
+                      : "ri-radio-button-line"
+                  }
+                />
+                <span>
+                  <strong>{title}</strong>
+                  <small>{type}</small>
+                </span>
+                <time>{time}</time>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {notificationOpen && (
+          <div className="hf-agent-notification" role="status">
+            <Icon name="ri-checkbox-circle-line" />
+            <span>
+              <strong>审阅摘要已生成</strong>
+              <small>SaaS 服务采购合同 V3</small>
+            </span>
+            <button
+              type="button"
+              aria-label="关闭通知"
+              onClick={() => setNotificationOpen(false)}
+            >
+              <Icon name="ri-close-line" />
+            </button>
+          </div>
+        )}
+      </aside>
+
+      {mobileActivityOpen && (
+        <button
+          className="hf-mobile-activity-backdrop"
+          type="button"
+          aria-label="关闭动态面板"
+          onClick={() => setMobileActivityOpen(false)}
+        />
+      )}
+    </div>
   );
 }
 
