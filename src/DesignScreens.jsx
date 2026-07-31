@@ -520,8 +520,8 @@ function Workbench({
           <div>
             <h1>我已完成今天的合同风险扫描。</h1>
             <p>
-              今日已审阅 <strong>14</strong> 份合同，
-              <strong>3</strong> 个事项等待你处理
+              今日已查看 <strong>120</strong> 条信息，
+              <strong>3</strong> 个待处理
             </p>
           </div>
           <button
