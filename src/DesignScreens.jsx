@@ -264,7 +264,13 @@ function Sidebar({ active = "合同审阅", onNavigate }) {
   );
 }
 
-function Topbar({ mode = "review", onMenu, onMore }) {
+function Topbar({
+  mode = "review",
+  onMenu,
+  onMore,
+  moreIcon = "ri-more-fill",
+  moreLabel = "更多操作",
+}) {
   const dashboard = mode === "dashboard";
 
   return (
@@ -295,8 +301,8 @@ function Topbar({ mode = "review", onMenu, onMore }) {
           <Icon name={dashboard ? "ri-pulse-line" : "ri-checkbox-circle-line"} />
           {dashboard ? "AI 正常运行" : "已自动保存 11:30"}
         </span>
-        <button className="hf-icon-button" type="button" onClick={onMore} aria-label="更多操作">
-          <Icon name="ri-more-fill" />
+        <button className="hf-icon-button" type="button" onClick={onMore} aria-label={moreLabel}>
+          <Icon name={moreIcon} />
         </button>
       </div>
     </header>
@@ -311,11 +317,19 @@ function Shell({
   onNavigate,
   onMenu,
   onMore,
+  moreIcon,
+  moreLabel,
 }) {
   return (
     <div className={`hf-shell ${className}`}>
       <Sidebar active={active} onNavigate={onNavigate} />
-      <Topbar mode={mode} onMenu={onMenu} onMore={onMore} />
+      <Topbar
+        mode={mode}
+        onMenu={onMenu}
+        onMore={onMore}
+        moreIcon={moreIcon}
+        moreLabel={moreLabel}
+      />
       {children}
     </div>
   );
@@ -552,6 +566,7 @@ function Workbench({
   onOpenExport,
   onUpload,
   onNotify,
+  workspaceProps,
 }) {
   const [feedFilter, setFeedFilter] = useState("全部");
   const [goalRange, setGoalRange] = useState("今日");
@@ -560,6 +575,8 @@ function Workbench({
   const [notificationOpen, setNotificationOpen] = useState(true);
   const [mobileActivityOpen, setMobileActivityOpen] = useState(false);
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [workspaceDrawerOpen, setWorkspaceDrawerOpen] = useState(false);
+  const [workspaceDrawerCompare, setWorkspaceDrawerCompare] = useState(false);
 
   useEffect(() => {
     if (!reviewDrawerOpen) return undefined;
@@ -571,6 +588,17 @@ function Workbench({
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [reviewDrawerOpen]);
+
+  useEffect(() => {
+    if (!workspaceDrawerOpen) return undefined;
+
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setWorkspaceDrawerOpen(false);
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [workspaceDrawerOpen]);
 
   const briefingItems = [
     {
@@ -1033,9 +1061,37 @@ function Workbench({
         }}
         onConfirm={() => {
           setReviewDrawerOpen(false);
-          onOpenContext();
+          setWorkspaceDrawerCompare(false);
+          setWorkspaceDrawerOpen(true);
         }}
       />
+
+      {workspaceDrawerOpen && (
+        <>
+          <button
+            className="hf-workspace-review-backdrop"
+            type="button"
+            aria-label="关闭合同审阅工作区"
+            onClick={() => setWorkspaceDrawerOpen(false)}
+          />
+          <section
+            className="hf-workspace-review-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="SaaS 服务采购合同 V3 审阅工作区"
+          >
+            <Workspace
+              {...workspaceProps}
+              compare={workspaceDrawerCompare}
+              embedded
+              onCloseEmbedded={() => setWorkspaceDrawerOpen(false)}
+              onOpenWorkspace={() => setWorkspaceDrawerCompare(false)}
+              onOpenCompare={() => setWorkspaceDrawerCompare(true)}
+              onOpenExport={() => onNotify("Review Package 导出已准备")}
+            />
+          </section>
+        </>
+      )}
     </div>
   );
 }
@@ -1415,6 +1471,8 @@ function Workspace({
   onNavTab,
   materialOnly,
   onMaterialOnly,
+  embedded = false,
+  onCloseEmbedded,
 }) {
   const issue = issues[selectedIssue];
   const outline = [
@@ -1432,11 +1490,17 @@ function Workspace({
 
   return (
     <Shell
-      className={`hf-workspace-screen ${compare ? "hf-compare-screen" : ""}`}
+      className={`hf-workspace-screen ${compare ? "hf-compare-screen" : ""} ${embedded ? "hf-workspace-embedded" : ""}`}
       mode={compare ? "compare" : "review"}
       onNavigate={onNavigate}
       onMenu={() => onNotify("使用左侧导航切换工作区")}
-      onMore={() => onNotify("合同操作菜单已就绪")}
+      onMore={
+        embedded
+          ? onCloseEmbedded
+          : () => onNotify("合同操作菜单已就绪")
+      }
+      moreIcon={embedded ? "ri-close-line" : undefined}
+      moreLabel={embedded ? "关闭合同审阅工作区" : undefined}
     >
       <main className="hf-workspace">
         <aside className="hf-clause-nav">
@@ -2053,6 +2117,7 @@ export function DesignScreens() {
         onOpenExport={() => setView("export")}
         onUpload={() => fileInputRef.current?.click()}
         onNotify={notify}
+        workspaceProps={workspaceProps}
       />
     );
   } else if (view === "context") {
