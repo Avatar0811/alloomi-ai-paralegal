@@ -321,14 +321,63 @@ function Shell({
   );
 }
 
+const initialWorkbenchReviewContext = {
+  position: "采购方",
+  amount: "¥ 680,000 / 年",
+  jurisdiction: "中国大陆",
+  depth: "标准审阅",
+  baseline: "责任上限 ≤ 12 个月服务费；数据事件 24 小时通知",
+};
+
 function WorkbenchReviewDrawer({
   open,
   onClose,
-  onEdit,
+  onSave,
   onIgnore,
   onConfirm,
 }) {
+  const [reviewContext, setReviewContext] = useState(initialWorkbenchReviewContext);
+  const [draftContext, setDraftContext] = useState(initialWorkbenchReviewContext);
+  const [editingContext, setEditingContext] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setEditingContext(false);
+      setDraftContext(reviewContext);
+    }
+  }, [open, reviewContext]);
+
   if (!open) return null;
+
+  const updateDraft = (field, value) => {
+    setDraftContext((current) => ({ ...current, [field]: value }));
+  };
+
+  const beginEditing = () => {
+    setDraftContext(reviewContext);
+    setEditingContext(true);
+  };
+
+  const cancelEditing = () => {
+    setDraftContext(reviewContext);
+    setEditingContext(false);
+  };
+
+  const saveContext = () => {
+    const nextContext = {
+      ...draftContext,
+      amount: draftContext.amount.trim(),
+      baseline: draftContext.baseline.trim(),
+    };
+    setReviewContext(nextContext);
+    setDraftContext(nextContext);
+    setEditingContext(false);
+    onSave(nextContext);
+  };
+
+  const canSave =
+    draftContext.amount.trim().length > 0 &&
+    draftContext.baseline.trim().length > 0;
 
   return (
     <>
@@ -369,15 +418,82 @@ function WorkbenchReviewDrawer({
           <section>
             <div className="hf-section-title">
               <h3>Review Context</h3>
-              <button type="button" onClick={onEdit}>编辑</button>
+              {editingContext ? (
+                <div className="hf-context-edit-actions">
+                  <button type="button" onClick={cancelEditing}>取消</button>
+                  <button
+                    className="primary"
+                    type="button"
+                    disabled={!canSave}
+                    onClick={saveContext}
+                  >
+                    保存
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={beginEditing}>编辑</button>
+              )}
             </div>
-            <dl className="hf-context-grid">
-              <div><dt>我方立场</dt><dd>采购方</dd></div>
-              <div><dt>交易金额</dt><dd>¥ 680,000 / 年</dd></div>
-              <div><dt>适用法域</dt><dd>中国大陆</dd></div>
-              <div><dt>审阅深度</dt><dd>标准审阅</dd></div>
-              <div className="wide"><dt>业务底线</dt><dd>责任上限 ≤ 12 个月服务费；数据事件 24 小时通知</dd></div>
-            </dl>
+            {editingContext ? (
+              <div className="hf-context-grid editing">
+                <label>
+                  <span>我方立场</span>
+                  <select
+                    autoFocus
+                    value={draftContext.position}
+                    onChange={(event) => updateDraft("position", event.target.value)}
+                  >
+                    <option>采购方</option>
+                    <option>供应商</option>
+                    <option>中立审阅</option>
+                  </select>
+                </label>
+                <label>
+                  <span>交易金额</span>
+                  <input
+                    value={draftContext.amount}
+                    onChange={(event) => updateDraft("amount", event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>适用法域</span>
+                  <select
+                    value={draftContext.jurisdiction}
+                    onChange={(event) => updateDraft("jurisdiction", event.target.value)}
+                  >
+                    <option>中国大陆</option>
+                    <option>中国香港</option>
+                    <option>新加坡</option>
+                  </select>
+                </label>
+                <label>
+                  <span>审阅深度</span>
+                  <select
+                    value={draftContext.depth}
+                    onChange={(event) => updateDraft("depth", event.target.value)}
+                  >
+                    <option>快速审阅</option>
+                    <option>标准审阅</option>
+                    <option>深度审阅</option>
+                  </select>
+                </label>
+                <label className="wide">
+                  <span>业务底线</span>
+                  <textarea
+                    value={draftContext.baseline}
+                    onChange={(event) => updateDraft("baseline", event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : (
+              <dl className="hf-context-grid">
+                <div><dt>我方立场</dt><dd>{reviewContext.position}</dd></div>
+                <div><dt>交易金额</dt><dd>{reviewContext.amount}</dd></div>
+                <div><dt>适用法域</dt><dd>{reviewContext.jurisdiction}</dd></div>
+                <div><dt>审阅深度</dt><dd>{reviewContext.depth}</dd></div>
+                <div className="wide"><dt>业务底线</dt><dd>{reviewContext.baseline}</dd></div>
+              </dl>
+            )}
           </section>
 
           <section>
@@ -910,7 +1026,7 @@ function Workbench({
       <WorkbenchReviewDrawer
         open={reviewDrawerOpen}
         onClose={() => setReviewDrawerOpen(false)}
-        onEdit={() => onNotify("Review Context 编辑已打开")}
+        onSave={() => onNotify("Review Context 已保存")}
         onIgnore={() => {
           setReviewDrawerOpen(false);
           onNotify("已记录反馈，任务保持在今日简报中");
