@@ -347,7 +347,7 @@ function Workbench({
       title: "AI 完成 SaaS 服务采购合同 V3 初筛",
       description: "识别 11 个问题，其中 4 项高风险；责任限制与数据安全需要优先确认。",
       meta: "11:28 · AI 自动执行",
-      status: "已完成",
+      status: "已处理",
       action: () => onOpenWorkspace(),
     },
     {
@@ -356,7 +356,7 @@ function Workbench({
       title: "已对比 DPA V2 与对方回传版本",
       description: "检测到 7 处实质变化，责任上限与数据留存条款出现新的偏离。",
       meta: "10:46 · 版本监控",
-      status: "已完成",
+      status: "已处理",
       action: () => onOpenCompare(),
     },
     {
@@ -411,7 +411,7 @@ function Workbench({
       title: "SaaS 服务采购合同 V2 Review Package 已归档",
       description: "修订版、带批注版本、审查摘要和执行轨迹均已完成校验。",
       meta: "成果包 · 昨天 17:42",
-      status: "已完成",
+      status: "已处理",
       action: () => onOpenExport(),
     },
     {
@@ -420,7 +420,7 @@ function Workbench({
       title: "Marketing NDA 红线稿已生成",
       description: "保密期限、允许披露对象和信息返还义务已按标准模板调整。",
       meta: "成果包 · 7 月 28 日",
-      status: "已完成",
+      status: "已处理",
       action: () => onOpenExport(),
     },
   ];
@@ -579,7 +579,7 @@ function Workbench({
                 <span className={`hf-brief-dot ${item.tone}`}>
                   <Icon
                     name={
-                      item.status === "已完成"
+                      item.status === "已处理"
                         ? "ri-checkbox-circle-fill"
                         : "ri-circle-fill"
                     }
@@ -591,7 +591,7 @@ function Workbench({
                   <em>{item.meta}</em>
                 </span>
                 <span className="hf-brief-tags">
-                  <Tag tone={item.status === "已完成" ? "green" : "red"}>
+                  <Tag tone={item.status === "已处理" ? "green" : "red"}>
                     {item.status}
                   </Tag>
                   {item.proactive && <Tag tone="blue">AI 主动式</Tag>}
