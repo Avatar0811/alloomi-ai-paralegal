@@ -321,6 +321,110 @@ function Shell({
   );
 }
 
+function WorkbenchReviewDrawer({
+  open,
+  onClose,
+  onEdit,
+  onIgnore,
+  onConfirm,
+}) {
+  if (!open) return null;
+
+  return (
+    <>
+      <button
+        className="hf-workbench-review-backdrop"
+        type="button"
+        aria-label="关闭合同审阅详情"
+        onClick={onClose}
+      />
+      <aside
+        className="hf-task-detail hf-workbench-review-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="hf-workbench-review-title"
+      >
+        <header>
+          <div>
+            <span className="hf-eyebrow">TASK · CR-2026-0730-01</span>
+            <h2 id="hf-workbench-review-title">SaaS 服务采购合同 V3</h2>
+            <p>启明云服务 · MSA · 当前版本 · V3</p>
+          </div>
+          <button
+            className="hf-icon-button"
+            type="button"
+            onClick={onClose}
+            aria-label="关闭合同审阅详情"
+          >
+            <Icon name="ri-close-line" />
+          </button>
+        </header>
+
+        <div className="hf-detail-scroll">
+          <section className="hf-reason-box">
+            <span><Icon name="ri-sparkling-line" />AI 建议处理</span>
+            <p>签署截止临近，存在责任上限与数据跨境风险。建议优先确认审阅上下文并处理高风险条款。</p>
+          </section>
+
+          <section>
+            <div className="hf-section-title">
+              <h3>Review Context</h3>
+              <button type="button" onClick={onEdit}>编辑</button>
+            </div>
+            <dl className="hf-context-grid">
+              <div><dt>我方立场</dt><dd>采购方</dd></div>
+              <div><dt>交易金额</dt><dd>¥ 680,000 / 年</dd></div>
+              <div><dt>适用法域</dt><dd>中国大陆</dd></div>
+              <div><dt>审阅深度</dt><dd>标准审阅</dd></div>
+              <div className="wide"><dt>业务底线</dt><dd>责任上限 ≤ 12 个月服务费；数据事件 24 小时通知</dd></div>
+            </dl>
+          </section>
+
+          <section>
+            <div className="hf-section-title">
+              <h3>风险概览</h3>
+              <span>11 个问题</span>
+            </div>
+            <div className="hf-risk-summary">
+              <div className="critical"><strong>0</strong><span>Critical</span></div>
+              <div className="high"><strong>4</strong><span>High</span></div>
+              <div className="medium"><strong>4</strong><span>Medium</span></div>
+              <div className="low"><strong>3</strong><span>Low</span></div>
+            </div>
+          </section>
+
+          <section>
+            <div className="hf-section-title">
+              <h3>版本链</h3>
+              <span>3 个版本</span>
+            </div>
+            <div className="hf-version-line">
+              <span className="done" />
+              <div><strong>客户初稿 V1</strong><small>邮件 · 7 月 25 日</small></div>
+              <span className="done" />
+              <div><strong>我方红线 V2</strong><small>Leo · 7 月 27 日</small></div>
+              <span className="active" />
+              <div><strong>对方回传 V3</strong><small>邮件 · 今天 10:24</small></div>
+            </div>
+          </section>
+
+          <section className="hf-safety-note">
+            <Icon name="ri-shield-check-line" />
+            <p>以下为 AI 初筛和修订建议，不构成最终法律意见，请由法务 owner 确认。</p>
+          </section>
+        </div>
+
+        <footer>
+          <Button icon="ri-chat-1-line" onClick={onIgnore}>忽略并反馈</Button>
+          <Button tone="primary" icon="ri-play-circle-line" onClick={onConfirm}>
+            确认开始审阅
+          </Button>
+        </footer>
+      </aside>
+    </>
+  );
+}
+
 function Workbench({
   processed,
   onNavigate,
@@ -339,6 +443,18 @@ function Workbench({
   const [composer, setComposer] = useState("");
   const [notificationOpen, setNotificationOpen] = useState(true);
   const [mobileActivityOpen, setMobileActivityOpen] = useState(false);
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!reviewDrawerOpen) return undefined;
+
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setReviewDrawerOpen(false);
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [reviewDrawerOpen]);
 
   const briefingItems = [
     {
@@ -348,7 +464,7 @@ function Workbench({
       description: "识别 11 个问题，其中 4 项高风险；责任限制与数据安全需要优先确认。",
       meta: "11:28 · AI 自动执行",
       status: "已处理",
-      action: () => onOpenWorkspace(),
+      action: () => setReviewDrawerOpen(true),
     },
     {
       id: "compare",
@@ -790,6 +906,20 @@ function Workbench({
           onClick={() => setMobileActivityOpen(false)}
         />
       )}
+
+      <WorkbenchReviewDrawer
+        open={reviewDrawerOpen}
+        onClose={() => setReviewDrawerOpen(false)}
+        onEdit={() => onNotify("Review Context 编辑已打开")}
+        onIgnore={() => {
+          setReviewDrawerOpen(false);
+          onNotify("已记录反馈，任务保持在今日简报中");
+        }}
+        onConfirm={() => {
+          setReviewDrawerOpen(false);
+          onOpenContext();
+        }}
+      />
     </div>
   );
 }
