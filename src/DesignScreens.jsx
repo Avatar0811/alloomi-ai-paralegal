@@ -345,6 +345,7 @@ const initialWorkbenchReviewContext = {
 
 function WorkbenchReviewDrawer({
   open,
+  task,
   onClose,
   onSave,
   onIgnore,
@@ -409,9 +410,9 @@ function WorkbenchReviewDrawer({
       >
         <header>
           <div>
-            <span className="hf-eyebrow">TASK · CR-2026-0730-01</span>
-            <h2 id="hf-workbench-review-title">SaaS 服务采购合同 V3</h2>
-            <p>启明云服务 · MSA · 当前版本 · V3</p>
+            <span className="hf-eyebrow">TASK · {task.drawerTaskId}</span>
+            <h2 id="hf-workbench-review-title">{task.drawerTitle}</h2>
+            <p>{task.drawerSubtitle}</p>
           </div>
           <button
             className="hf-icon-button"
@@ -426,7 +427,7 @@ function WorkbenchReviewDrawer({
         <div className="hf-detail-scroll">
           <section className="hf-reason-box">
             <span><Icon name="ri-sparkling-line" />AI 建议处理</span>
-            <p>签署截止临近，存在责任上限与数据跨境风险。建议优先确认审阅上下文并处理高风险条款。</p>
+            <p>{task.drawerReason}</p>
           </section>
 
           <section>
@@ -575,6 +576,7 @@ function Workbench({
   const [notificationOpen, setNotificationOpen] = useState(true);
   const [mobileActivityOpen, setMobileActivityOpen] = useState(false);
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [selectedReviewItemId, setSelectedReviewItemId] = useState("scan");
   const [workspaceDrawerOpen, setWorkspaceDrawerOpen] = useState(false);
   const [workspaceDrawerCompare, setWorkspaceDrawerCompare] = useState(false);
 
@@ -600,6 +602,11 @@ function Workbench({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [workspaceDrawerOpen]);
 
+  const openReviewDrawer = (itemId) => {
+    setSelectedReviewItemId(itemId);
+    setReviewDrawerOpen(true);
+  };
+
   const briefingItems = [
     {
       id: "scan",
@@ -608,7 +615,11 @@ function Workbench({
       description: "识别 11 个问题，其中 4 项高风险；责任限制与数据安全需要优先确认。",
       meta: "11:28 · AI 自动执行",
       status: "已处理",
-      action: () => setReviewDrawerOpen(true),
+      drawerTaskId: "CR-2026-0730-01",
+      drawerTitle: "SaaS 服务采购合同 V3",
+      drawerSubtitle: "启明云服务 · MSA · 当前版本 · V3",
+      drawerReason: "签署截止临近，存在责任上限与数据跨境风险。建议优先确认审阅上下文并处理高风险条款。",
+      action: () => openReviewDrawer("scan"),
     },
     {
       id: "compare",
@@ -617,7 +628,11 @@ function Workbench({
       description: "检测到 7 处实质变化，责任上限与数据留存条款出现新的偏离。",
       meta: "10:46 · 版本监控",
       status: "已处理",
-      action: () => onOpenCompare(),
+      drawerTaskId: "VM-2026-0803-02",
+      drawerTitle: "DPA V2 版本对比",
+      drawerSubtitle: "澄星数据 · DPA · 对方回传版本",
+      drawerReason: "检测到 7 处实质变化，责任上限与数据留存条款出现新的偏离。建议确认审阅上下文后优先处理新增差异。",
+      action: () => openReviewDrawer("compare"),
     },
     {
       id: "owner",
@@ -627,10 +642,11 @@ function Workbench({
       meta: "SaaS 服务采购合同 V3 · Gmail",
       status: "待处理",
       proactive: true,
-      action: () => {
-        onSelectTask(0);
-        onOpenContext();
-      },
+      drawerTaskId: "CO-2026-0803-03",
+      drawerTitle: "责任上限与数据跨境确认",
+      drawerSubtitle: "SaaS 服务采购合同 V3 · 采购 Owner",
+      drawerReason: "签署截止为今天 18:00，业务取舍仍未确认。建议先核对责任上限和数据跨境底线，再向采购 Owner 发起确认。",
+      action: () => openReviewDrawer("owner"),
     },
     {
       id: "breach",
@@ -640,7 +656,11 @@ function Workbench({
       meta: "第 9.2 条 · 数据安全",
       status: "待处理",
       proactive: true,
-      action: () => onOpenWorkspace(),
+      drawerTaskId: "CR-2026-0803-04",
+      drawerTitle: "数据泄露通知与补救责任",
+      drawerSubtitle: "SaaS 服务采购合同 V3 · 第 9.2 条",
+      drawerReason: "对方版本约定 10 个工作日通知，偏离团队 Playbook 的 24 小时底线。建议确认审阅上下文后生成替换条款。",
+      action: () => openReviewDrawer("breach"),
     },
     {
       id: "minutes",
@@ -650,7 +670,11 @@ function Workbench({
       meta: "会议纪要 · 今天 09:32",
       status: "待处理",
       proactive: true,
-      action: () => onOpenTasks(),
+      drawerTaskId: "MT-2026-0803-05",
+      drawerTitle: "每日法务采购同步",
+      drawerSubtitle: "会议纪要 · 今天 09:32 · 3 项跟进任务",
+      drawerReason: "会议纪要已识别排他范围、最低采购承诺与上线验收标准三项待办。建议确认上下文后统一进入审阅处理。",
+      action: () => openReviewDrawer("minutes"),
     },
     {
       id: "channel",
@@ -660,10 +684,11 @@ function Workbench({
       meta: "渠道合作协议 V2 · 待补充信息",
       status: "待处理",
       proactive: true,
-      action: () => {
-        onSelectTask(1);
-        onOpenContext();
-      },
+      drawerTaskId: "CR-2026-0803-06",
+      drawerTitle: "渠道协议排他与采购承诺",
+      drawerSubtitle: "渠道合作协议 V2 · 待补充业务信息",
+      drawerReason: "业务背景仍不完整，AI 已整理 5 个待确认问题。建议先补齐排他范围和最低采购承诺，再开始正式审阅。",
+      action: () => openReviewDrawer("channel"),
     },
     {
       id: "package",
@@ -672,7 +697,11 @@ function Workbench({
       description: "修订版、带批注版本、审查摘要和执行轨迹均已完成校验。",
       meta: "成果包 · 昨天 17:42",
       status: "已处理",
-      action: () => onOpenExport(),
+      drawerTaskId: "PK-2026-0802-07",
+      drawerTitle: "SaaS 服务采购合同 V2 成果包",
+      drawerSubtitle: "启明云服务 · Review Package · 已归档",
+      drawerReason: "修订版、带批注版本、审查摘要和执行轨迹均已完成校验。可在确认上下文后继续查看审阅结果。",
+      action: () => openReviewDrawer("package"),
     },
     {
       id: "nda",
@@ -681,9 +710,17 @@ function Workbench({
       description: "保密期限、允许披露对象和信息返还义务已按标准模板调整。",
       meta: "成果包 · 7 月 28 日",
       status: "已处理",
-      action: () => onOpenExport(),
+      drawerTaskId: "CR-2026-0728-08",
+      drawerTitle: "Marketing NDA 红线稿",
+      drawerSubtitle: "Marketing NDA · 红线版本 · 已生成",
+      drawerReason: "保密期限、允许披露对象和信息返还义务已按标准模板调整。建议确认上下文后复核红线结果。",
+      action: () => openReviewDrawer("nda"),
     },
   ];
+
+  const selectedReviewItem =
+    briefingItems.find((item) => item.id === selectedReviewItemId) ??
+    briefingItems[0];
 
   const visibleBriefingItems = briefingItems
     .filter((item) => feedFilter === "全部" || item.status === feedFilter)
@@ -826,7 +863,12 @@ function Workbench({
 
           <div className="hf-brief-list">
             {visibleBriefingItems.map((item) => (
-              <button type="button" key={item.id} onClick={item.action}>
+              <button
+                type="button"
+                key={item.id}
+                data-testid={`brief-item-${item.id}`}
+                onClick={item.action}
+              >
                 <span className={`hf-brief-dot ${item.tone}`}>
                   <Icon
                     name={
@@ -1051,6 +1093,7 @@ function Workbench({
 
       <WorkbenchReviewDrawer
         open={reviewDrawerOpen}
+        task={selectedReviewItem}
         onClose={() => setReviewDrawerOpen(false)}
         onSave={() => onNotify("Review Context 已保存")}
         onIgnore={() => {
@@ -1059,7 +1102,7 @@ function Workbench({
         }}
         onConfirm={() => {
           setReviewDrawerOpen(false);
-          setWorkspaceDrawerCompare(false);
+          setWorkspaceDrawerCompare(selectedReviewItemId === "compare");
           setWorkspaceDrawerOpen(true);
         }}
       />
