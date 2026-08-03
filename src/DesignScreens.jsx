@@ -803,19 +803,10 @@ function Workbench({
             <div className="hf-brief-tools">
               <button
                 type="button"
-                aria-label="上传合同"
-                title="上传合同"
-                onClick={onUpload}
+                aria-label="列表视图"
+                title="列表视图"
               >
-                <Icon name="ri-upload-2-line" />
-              </button>
-              <button
-                type="button"
-                aria-label="新建审阅"
-                title="新建审阅"
-                onClick={onOpenContext}
-              >
-                <Icon name="ri-add-circle-line" />
+                <Icon name="ri-list-unordered" />
               </button>
               <button
                 className={feedFilter === "待处理" ? "active" : ""}
