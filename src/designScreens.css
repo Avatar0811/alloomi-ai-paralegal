@@ -1290,18 +1290,6 @@
   font-size: 9px;
 }
 
-.hf-link-button {
-  margin-top: 10px;
-  padding: 0;
-  border: 0;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: transparent;
-  color: #637c9e;
-  font-size: 9px;
-}
-
 .hf-panel-footer {
   min-height: 68px;
   padding: 11px 20px;

@@ -1401,7 +1401,6 @@ function IssuePanel({
   processed,
   total,
   onResolve,
-  onRequestCollaboration,
   onPreviewPackage,
   onClose,
   mobileOpen,
@@ -1477,16 +1476,11 @@ function IssuePanel({
               <Button icon="ri-close-line" onClick={onStartEdit}>取消编辑</Button>
             </div>
           ) : (
-            <>
-              <div className="hf-action-grid">
-                <Button tone="primary" icon="ri-check-line" onClick={() => onResolve("已采纳")}>采纳修改</Button>
-                <Button icon="ri-edit-line" onClick={onStartEdit}>编辑后采纳</Button>
-                <Button icon="ri-close-circle-line" onClick={() => onResolve("已驳回")}>驳回</Button>
-              </div>
-              <button className="hf-link-button" type="button" onClick={onRequestCollaboration}>
-                <Icon name="ri-user-shared-line" />请求协作或暂时搁置
-              </button>
-            </>
+            <div className="hf-action-grid">
+              <Button tone="primary" icon="ri-check-line" onClick={() => onResolve("已采纳")}>采纳修改</Button>
+              <Button icon="ri-edit-line" onClick={onStartEdit}>编辑后采纳</Button>
+              <Button icon="ri-close-circle-line" onClick={() => onResolve("已驳回")}>驳回</Button>
+            </div>
           )}
         </section>
       </div>
@@ -1505,7 +1499,6 @@ function Workspace({
   selectedIssue,
   onSelectIssue,
   onResolve,
-  onRequestCollaboration,
   onOpenExport,
   onOpenCompare,
   onOpenWorkspace,
@@ -1623,7 +1616,6 @@ function Workspace({
               <span>{zoom}%</span>
               <button type="button" onClick={() => onZoom(4)} aria-label="放大"><Icon name="ri-add-line" /></button>
               <span className="hf-divider" />
-              <button type="button" onClick={() => onNotify("4 条评论已同步到问题面板")}><Icon name="ri-message-3-line" />评论 4</button>
               <button className="hf-mobile-only" type="button" onClick={() => onMobileIssueOpen(true)} aria-label="打开问题面板"><Icon name="ri-list-check-3" /></button>
               <Button tone="primary" icon="ri-download-2-line" onClick={onOpenExport}>导出</Button>
             </div>
@@ -1645,7 +1637,6 @@ function Workspace({
           processed={processed}
           total={issues.length}
           onResolve={onResolve}
-          onRequestCollaboration={onRequestCollaboration}
           onPreviewPackage={onOpenExport}
           onClose={() => onMobileIssueOpen(false)}
           mobileOpen={mobileIssueOpen}
@@ -2083,11 +2074,6 @@ export function DesignScreens() {
     );
   };
 
-  const requestCollaboration = () => {
-    updateIssue("协作中");
-    notify("已向业务 Owner 发起协作请求");
-  };
-
   const startEditing = () => {
     if (!editing) setEditedText(issues[selectedIssue].recommendation);
     setEditing((current) => !current);
@@ -2133,7 +2119,6 @@ export function DesignScreens() {
     selectedIssue,
     onSelectIssue: chooseIssue,
     onResolve: updateIssue,
-    onRequestCollaboration: requestCollaboration,
     onOpenExport: () => setView("export"),
     onOpenCompare: () => setView("compare"),
     onOpenWorkspace: () => setView("workspace"),
