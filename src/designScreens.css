@@ -1576,6 +1576,12 @@
   position: relative;
 }
 
+.hf-export-overlay-embedded {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+}
+
 .hf-overlay-screen > .hf-shell {
   position: absolute;
   inset: 0;

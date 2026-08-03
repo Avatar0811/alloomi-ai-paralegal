@@ -568,6 +568,7 @@ function Workbench({
   onUpload,
   onNotify,
   workspaceProps,
+  exportModalProps,
 }) {
   const [feedFilter, setFeedFilter] = useState("全部");
   const [goalRange, setGoalRange] = useState("今日");
@@ -579,6 +580,7 @@ function Workbench({
   const [selectedReviewItemId, setSelectedReviewItemId] = useState("scan");
   const [workspaceDrawerOpen, setWorkspaceDrawerOpen] = useState(false);
   const [workspaceDrawerCompare, setWorkspaceDrawerCompare] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   useEffect(() => {
     if (!reviewDrawerOpen) return undefined;
@@ -592,15 +594,20 @@ function Workbench({
   }, [reviewDrawerOpen]);
 
   useEffect(() => {
-    if (!workspaceDrawerOpen) return undefined;
+    if (!workspaceDrawerOpen && !exportModalOpen) return undefined;
 
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") setWorkspaceDrawerOpen(false);
+      if (event.key !== "Escape") return;
+      if (exportModalOpen) {
+        setExportModalOpen(false);
+      } else {
+        setWorkspaceDrawerOpen(false);
+      }
     };
 
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [workspaceDrawerOpen]);
+  }, [workspaceDrawerOpen, exportModalOpen]);
 
   const openReviewDrawer = (itemId) => {
     setSelectedReviewItemId(itemId);
@@ -1128,10 +1135,18 @@ function Workbench({
               onCloseEmbedded={() => setWorkspaceDrawerOpen(false)}
               onOpenWorkspace={() => setWorkspaceDrawerCompare(false)}
               onOpenCompare={() => setWorkspaceDrawerCompare(true)}
-              onOpenExport={() => onNotify("Review Package 导出已准备")}
+              onOpenExport={() => setExportModalOpen(true)}
             />
           </section>
         </>
+      )}
+
+      {exportModalOpen && (
+        <ExportModal
+          {...exportModalProps}
+          embedded
+          onClose={() => setExportModalOpen(false)}
+        />
       )}
     </div>
   );
@@ -1840,17 +1855,18 @@ function ExportModal({
   generating,
   generated,
   workspaceProps,
+  embedded = false,
 }) {
   const unresolved = issues.length - processed;
 
   return (
-    <div className="hf-overlay-screen">
-      <Workspace {...workspaceProps} />
+    <div className={`hf-overlay-screen${embedded ? " hf-export-overlay-embedded" : ""}`}>
+      {!embedded && <Workspace {...workspaceProps} />}
       <div className="hf-backdrop" />
       <section className="hf-modal hf-export-modal">
         <header>
           <div className="hf-modal-icon blue"><Icon name="ri-archive-stack-line" /></div>
-          <div><h2>生成 Review Package</h2><p>将基于当前版本 V3 创建交付文件，原始合同不会被覆盖。</p></div>
+          <div><h2>生成审阅包</h2><p>将基于当前版本 V3 创建交付文件，原始合同不会被覆盖。</p></div>
           <button className="hf-icon-button" type="button" onClick={onClose} aria-label="关闭成果包"><Icon name="ri-close-line" /></button>
         </header>
         <div className="hf-modal-body">
@@ -2159,6 +2175,17 @@ export function DesignScreens() {
         onUpload={() => fileInputRef.current?.click()}
         onNotify={notify}
         workspaceProps={workspaceProps}
+        exportModalProps={{
+          issues,
+          processed,
+          exportOptions,
+          onToggleOption: (key) =>
+            setExportOptions((current) => ({ ...current, [key]: !current[key] })),
+          onGenerate: generatePackage,
+          generating,
+          generated,
+          workspaceProps,
+        }}
       />
     );
   } else if (view === "context") {
