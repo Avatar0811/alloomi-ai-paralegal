@@ -893,7 +893,14 @@ function Workbench({
                 <Icon name="ri-calendar-schedule-line" />
               </button>
             </div>
-            <span><i /> Lexi 在线</span>
+            <button
+              className="hf-composer-presence"
+              type="button"
+              aria-label="AI 在线"
+              title="AI 在线"
+            >
+              <Icon name="ri-record-circle-line" />
+            </button>
             <button
               type="button"
               aria-label="语音输入"

@@ -4042,19 +4042,9 @@ button.hf-checkbox {
   color: #5797d3;
 }
 
-.hf-composer-toolbar > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: #7690aa;
-  font-size: 8px;
-}
-
-.hf-composer-toolbar > span i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #31b86a;
+.hf-composer-toolbar button.hf-composer-presence {
+  color: #66a9eb;
+  font-size: 18px;
 }
 
 .hf-composer-toolbar button.hf-composer-send {
@@ -4677,7 +4667,7 @@ button.hf-checkbox {
     padding: 12px;
   }
 
-  .hf-composer-toolbar > span {
+  .hf-composer-toolbar .hf-composer-presence {
     display: none;
   }
 
